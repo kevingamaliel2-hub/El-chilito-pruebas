@@ -35,7 +35,10 @@ from django.db.migrations.loader import MigrationLoader
 from django.db.migrations.recorder import MigrationRecorder
 from psycopg.sql import Literal
 
-BASE = 'chilito_integracion_sinteticos'
+TARGET = os.environ.get('CHILITO_SQL_TARGET', 'standalone').strip().lower()
+if TARGET not in ('standalone', 'supabase'):
+    raise RuntimeError('CHILITO_SQL_TARGET debe ser standalone o supabase')
+BASE = 'postgres' if TARGET == 'supabase' else 'chilito_integracion_sinteticos'
 RAIZ = BACKEND.parent
 # Operaciones Python del historial: migran filas existentes y en una base vacía no hacen nada.
 SIN_EFECTO_EN_BASE_VACIA = {
@@ -44,7 +47,31 @@ SIN_EFECTO_EN_BASE_VACIA = {
     ('auth', '0011_update_proxy_permissions'),
     ('contenttypes', '0002_remove_content_type_name'),
 }
-GUARDA = f"""DO $$ BEGIN
+if TARGET == 'supabase':
+    GUARDA = """DO $$ BEGIN
+ IF current_database() <> 'postgres'
+ OR current_user <> 'chilito_pkg_owner'
+ OR session_user <> 'postgres'
+ THEN RAISE EXCEPTION 'Ejecutar en Supabase como postgres con SET ROLE chilito_pkg_owner'; END IF;
+ IF current_setting('server_version_num')::integer / 10000 <> 17
+ THEN RAISE EXCEPTION 'Este script requiere PostgreSQL 17'; END IF;
+ IF EXISTS(
+     SELECT 1
+     FROM pg_class c
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public'
+       AND c.relkind IN ('r','p','v','m','S','f')
+ ) OR EXISTS(
+     SELECT 1
+     FROM pg_proc p
+     JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public'
+ )
+ THEN RAISE EXCEPTION 'El esquema public no está vacío; se cancela la instalación'; END IF;
+END $$;
+"""
+else:
+    GUARDA = f"""DO $$ BEGIN
  IF current_database() <> '{BASE}'
  OR current_user <> 'chilito_pkg_owner'
  OR session_user <> 'chilito_pkg_owner'
@@ -145,7 +172,8 @@ def registro_de_migraciones(orden):
 
 
 def privilegios():
-    texto = (RAIZ / 'sql' / 'privilegios.sql').read_text()
+    nombre = 'privilegios_supabase.sql' if TARGET == 'supabase' else 'privilegios.sql'
+    texto = (RAIZ / 'sql' / nombre).read_text()
     texto = texto.replace(':"db_name"', f'"{BASE}"')
     lineas = [l for l in texto.splitlines() if l.strip() not in ('BEGIN;', 'COMMIT;')]
     return '\n'.join(lineas)
@@ -161,6 +189,7 @@ def main():
         f'-- Incluye {len(orden)} migraciones, tipos y permisos de Django, y privilegios.\n'
         '-- No contiene contraseñas ni cuentas. Si falla, se revierte todo.',
         'BEGIN;',
+        *(['SET LOCAL ROLE chilito_pkg_owner;'] if TARGET == 'supabase' else []),
         GUARDA,
         tabla_de_migraciones(),
         *ddl_de_migraciones(loader, orden),
@@ -172,7 +201,12 @@ def main():
         privilegios(),
         'COMMIT;',
     ]
-    salida = RAIZ / 'sql' / 'instalacion' / '03_esquema_completo.sql'
+    nombre_salida = (
+        '03_esquema_completo_supabase.sql'
+        if TARGET == 'supabase'
+        else '03_esquema_completo.sql'
+    )
+    salida = RAIZ / 'sql' / 'instalacion' / nombre_salida
     salida.parent.mkdir(exist_ok=True)
     salida.write_text('\n\n'.join(partes) + '\n')
     print(f'{salida.relative_to(RAIZ)}: {len(orden)} migraciones, sin conexión.')

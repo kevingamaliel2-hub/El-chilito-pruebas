@@ -16,7 +16,10 @@ if not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS:
     raise ImproperlyConfigured('Hosts explícitos requeridos')
 if not ORIGIN.startswith('https://'):
     raise ImproperlyConfigured('Origen HTTPS requerido')
-if DATABASES['default']['USER'] != 'chilito_pkg_runtime':
+if DATABASES['default']['USER'] not in {
+    'chilito_pkg_runtime',
+    'chilito_pkg_runtime.xeklsxrskccaxnmqqyjr',
+}:
     raise ImproperlyConfigured('La aplicación requiere rol limitado')
 if DATABASES['default']['OPTIONS']['sslmode'] != 'verify-full':
     raise ImproperlyConfigured('PostgreSQL remoto requiere verify-full en despliegue')
