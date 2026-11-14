@@ -23,6 +23,18 @@ if DATABASES['default']['USER'] not in {
     raise ImproperlyConfigured('La aplicación requiere rol limitado')
 if DATABASES['default']['OPTIONS']['sslmode'] != 'verify-full':
     raise ImproperlyConfigured('PostgreSQL remoto requiere verify-full en despliegue')
+
+# Certificado raíz de Supabase para verificar la conexión TLS.
+from pathlib import Path
+
+CHILITO_DB_SSLROOTCERT = os.environ.get(
+    'CHILITO_DB_SSLROOTCERT',
+    '/etc/secrets/prod-ca-2021.crt',
+)
+if not Path(CHILITO_DB_SSLROOTCERT).is_file():
+    raise ImproperlyConfigured('Falta el certificado raíz de PostgreSQL')
+
+DATABASES['default']['OPTIONS']['sslrootcert'] = CHILITO_DB_SSLROOTCERT
 try:
     Fernet(CHILITO_MFA_KEY)
 except (ValueError, TypeError):
