@@ -1,0 +1,113 @@
+/* Vidrio líquido: bordes de luz en todos los botones, refracción sobre fotos e indicador del menú.
+   Adaptación propia en CSS de un componente de referencia; sin React ni dependencias. */
+:root {
+  --lg-dark:0 2px 6px rgba(0,0,0,.14),inset 3px 3px .5px -3.5px rgba(255,255,255,.09),inset -3px -3px .5px -3.5px rgba(255,255,255,.85),inset 1px 1px 1px -.5px rgba(255,255,255,.6),inset -1px -1px 1px -.5px rgba(255,255,255,.6),inset 0 0 6px 6px rgba(255,255,255,.12),inset 0 0 2px 2px rgba(255,255,255,.06),0 0 12px rgba(0,0,0,.15);
+  /* Rellenos: filos nítidos. El brillo difuso de --lg-dark sobre un color sólido se ve como niebla. */
+  --lg-solid:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.28),inset 1px 0 0 rgba(255,255,255,.14),inset -1px 0 0 rgba(255,255,255,.14),0 8px 18px -8px rgba(8,24,15,.55);
+  --lg-light:inset 0 0 0 1px rgba(28,49,34,.17),inset 0 1px 0 #fff,0 1px 2px rgba(20,42,27,.08),0 6px 14px -8px rgba(20,42,27,.22);
+  --display-weight:800;
+}
+.glass-filter { position:absolute; }
+
+/* Botones sobre superficies oscuras */
+html body :is(.btn-liquid-nav,.btn-liquid-primary,.btn-liquid-secondary,.btn-liquid-dark,.btn-liquid):not(:disabled) {
+  background:rgba(255,255,255,.05)!important;border-color:transparent!important;box-shadow:var(--lg-dark)!important;
+}
+html body .sidebar .btn-liquid-sidebar:not([aria-current]),
+html body .sidebar .private-menu-logout { border-color:rgba(255,255,255,.14)!important;box-shadow:var(--lg-solid)!important; }
+/* Botón principal: el mismo verde limpio en todas las pantallas. */
+html body .btn-liquid-brand:not(:disabled) { background:linear-gradient(180deg,#3f7a55 0%,#285a3c 100%)!important;border-color:rgba(255,255,255,.2)!important;box-shadow:var(--lg-solid)!important;color:#fff!important; }
+html body .btn-liquid-brand:not(:disabled):hover { background:linear-gradient(180deg,#478860 0%,#2d6444 100%)!important; }
+html body .btn-liquid-brand::before,html body .btn-liquid-brand::after { display:none!important; }
+/* Botones claros sobre superficies claras */
+html body .btn-liquid-light:not(:disabled) { background:rgba(255,255,255,.72)!important;border-color:transparent!important;box-shadow:var(--lg-light)!important; }
+
+/* La refracción solo se aprecia sobre imagen o contenido en movimiento. Safari no la dibuja. */
+@supports (backdrop-filter:url(#x)) and (not (-webkit-touch-callout:none)) {
+  @media (hover:hover) {
+    html body :is(.public-header .button,.home .button,.app-header .button):not(:disabled):not(.btn-liquid-brand) {
+      -webkit-backdrop-filter:url(#container-glass)!important;backdrop-filter:url(#container-glass)!important;
+    }
+  }
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  html body .button:not(:disabled):not([aria-busy=true]):not(.header-nav .button):hover { transform:scale(1.04); }
+}
+
+/* Menú de la portada en escritorio: cápsula de vidrio con indicador que se desliza. */
+.nav-lamp { display:none; }
+@media (min-width:769px) {
+  /* Cápsula limpia: solo un filo de luz. El brillo difuso de los botones aquí se veía como humo. */
+  .public-header .header-nav { position:relative;gap:2px;padding:4px;border-radius:999px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),inset 0 1px 0 rgba(255,255,255,.3); }
+  html body .public-header .header-nav .button {
+    position:relative;z-index:1;min-height:38px!important;padding:.4rem 1.05rem;overflow:visible;
+    background:transparent!important;box-shadow:none!important;border-color:transparent!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  }
+  .nav-lamp { display:block;position:absolute;top:4px;bottom:4px;left:0;width:0;border-radius:999px;background:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.28); }
+  .nav-lamp.is-ready { transition:transform .42s cubic-bezier(.34,1.3,.64,1),width .42s cubic-bezier(.34,1.3,.64,1); }
+  .nav-lamp::before { content:"";position:absolute;top:-4px;left:50%;width:30px;height:3px;margin-left:-15px;border-radius:0 0 4px 4px;background:#d6e8a7; }
+}
+
+/* Letra de título: Geist en su peso más fuerte. */
+.hero-text h1,.auth-quote h2,.page-heading h1,.garden-welcome h1,.auth-flow #auth-title { font-weight:var(--display-weight)!important;letter-spacing:-.035em; }
+.home h2 { font-weight:700!important;letter-spacing:-.025em; }
+
+/* Entrada del título: las letras suben desde detrás de su línea. */
+.is-revealing .reveal-word { display:inline-block;overflow:hidden;padding-bottom:.16em;margin-bottom:-.16em;vertical-align:top; }
+.is-revealing .reveal-letter { display:inline-block;animation:letter-rise .8s cubic-bezier(.125,.92,.69,.975) both;animation-delay:calc(var(--letter)*24ms + 120ms); }
+@keyframes letter-rise { from { transform:translateY(115%); } to { transform:none; } }
+
+@media (prefers-reduced-transparency:reduce) {
+  html body :is(.btn-liquid-nav,.btn-liquid-primary,.btn-liquid-secondary,.btn-liquid-dark,.btn-liquid):not(:disabled) { background:#24503f!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important; }
+}
+@media (forced-colors:active) {
+  html body .button { box-shadow:none!important;border:1px solid ButtonText!important; }
+  .nav-lamp { background:Highlight; }
+}
+
+/* Pantallas de acceso: el mismo fondo y vidrio de la portada. Los campos siguen sólidos y legibles. */
+.auth-quote h2 span { display:block; }
+.auth-layout.auth-flow { background:#0e1c14;isolation:isolate;--focus:#fff; }
+.auth-layout::before { content:"";position:fixed;inset:-48px;z-index:-1;background:#0e1c14 url('../img/habanero-fondo.webp') 70% 40%/cover no-repeat;filter:blur(36px) brightness(.4) saturate(.9); }
+@media (min-width:1025px) { .auth-layout { grid-template-columns:42% minmax(0,1fr); } }
+.auth-flow.auth-layout .auth-main { padding-inline:clamp(20px,3.4vw,48px); }
+.auth-layout .auth-bento {
+  --text:#fff;--muted:rgba(255,255,255,.84);--sage:#fff;--focus:#fff;
+  width:100%;max-width:600px;padding:clamp(24px,3.2vw,44px);border-radius:28px;color:#fff;
+  background:rgba(22,44,33,.86);border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 48px -24px rgba(0,0,0,.7);
+}
+@supports (background:rgba(0,0,0,.1)) {
+  .auth-layout .auth-bento { background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.05) 100%); }
+}
+/* Campos en vidrio oscuro con texto blanco: se integran sin el destello de un fondo blanco. */
+html body .auth-layout .field input,html body .auth-layout .password-input-group input { color:#fff!important;-webkit-text-fill-color:#fff;background:rgba(255,255,255,.1)!important;border-color:rgba(255,255,255,.3)!important;caret-color:#fff; }
+html body .auth-layout .password-input-group { background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3); }
+html body .auth-layout .password-input-group input { background:transparent!important;border-color:transparent!important; }
+html body .auth-layout .password-eye-btn { color:#fff!important;background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.2)!important; }
+.auth-layout .field input::placeholder { color:rgba(255,255,255,.66);-webkit-text-fill-color:rgba(255,255,255,.66); }
+.auth-layout .field input:-webkit-autofill { -webkit-text-fill-color:#fff;box-shadow:inset 0 0 0 40px #26453a;caret-color:#fff; }
+.auth-layout .field input:focus-visible { outline-color:#fff!important; }
+.auth-layout .password-input-group:focus-within { outline-color:#fff; }
+.auth-layout .auth-text-link,.auth-layout .auth-switch a,.auth-layout .terms-field a { color:#fff; }
+.auth-layout .field-error,.auth-layout .terms-field .field-error { color:#ffc4ba; }
+.auth-layout .terms-label,.auth-layout .password-tips-title { color:#fff; }
+.auth-layout .terms-label input[type=checkbox] { accent-color:#fff; }
+.auth-layout .password-meter { background:rgba(255,255,255,.2); }
+.auth-layout .password-meter>span,.auth-layout .password-length.is-met .password-meter>span { background:#fff; }
+.auth-layout .password-check [data-password-check-icon] { border-color:rgba(255,255,255,.55);color:#fff; }
+.auth-layout .auth-feedback { color:#142419; }
+/* En acceso todos los botones son vidrio puro. */
+html body .auth-layout .auth-bento :is(.btn-liquid-light,.btn-liquid-brand):not(:disabled) { background:rgba(255,255,255,.08)!important;color:#fff!important;border-color:transparent!important;box-shadow:var(--lg-dark)!important; }
+html body .auth-layout .auth-bento :is(.btn-liquid-light,.btn-liquid-brand):not(:disabled):hover { background:rgba(255,255,255,.15)!important; }
+html body .auth-layout .auth-bento .button:disabled { background:rgba(255,255,255,.05)!important;color:rgba(255,255,255,.6)!important;border-color:rgba(255,255,255,.14)!important;box-shadow:none!important; }
+@media (prefers-reduced-transparency:reduce) {
+  .auth-layout::before { display:none; }
+  .auth-layout .auth-bento { background:#1c3327;-webkit-backdrop-filter:none;backdrop-filter:none; }
+}
+.auth-layout [data-step-feedback] { margin:12px 0 0; }
+.access-help-steps { margin:0 0 18px;padding-left:22px;color:rgba(255,255,255,.88);line-height:1.6; }
+.access-help-steps li + li { margin-top:10px; }
+.access-help-contact { margin:0 0 20px;color:#fff; }
+.access-help-contact a { color:#fff;font-weight:600;text-underline-offset:3px; }
