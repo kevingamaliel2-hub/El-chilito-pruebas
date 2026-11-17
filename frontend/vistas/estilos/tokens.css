@@ -1,0 +1,191 @@
+/* Tokens de diseño de El Chilito: único lugar donde se declaran variables.
+   Tres zonas: pública (portada, legales, cookies y avisos), acceso y panel (usuario y administración).
+   Las demás hojas solo las consumen con var(). Se carga primero en index.html. */
+
+/* ── Zona pública ────────────────────────────────────────────────────────────────────────────── */
+:root {
+  --ivory:#f2efe9;--warm-white:#fffdf6;--ink:#1f1915;--vegetable:#355a44;
+  --coral:#fa725a;--stone:#ccc5b9;--ink-muted:#655d54;
+  --bg:var(--ivory);--surface:var(--warm-white);--text:var(--ink);
+  --muted:var(--ink-muted);--sage:var(--vegetable);--line:var(--stone);--accent:var(--coral);
+  --error:#9c3027;--focus:var(--vegetable);
+  --body:Geist,Arial,sans-serif;--display:var(--body);
+  --display-weight:800;
+
+  --header-height:72px;
+  --private-nav-height:0px;--review-height:0px;
+
+  /* Vidrio de botones: filos de luz sobre oscuro, sobre relleno sólido y sobre claro. */
+  --lg-dark:0 2px 6px rgba(0,0,0,.14),inset 3px 3px .5px -3.5px rgba(255,255,255,.09),inset -3px -3px .5px -3.5px rgba(255,255,255,.85),inset 1px 1px 1px -.5px rgba(255,255,255,.6),inset -1px -1px 1px -.5px rgba(255,255,255,.6),inset 0 0 6px 6px rgba(255,255,255,.12),inset 0 0 2px 2px rgba(255,255,255,.06),0 0 12px rgba(0,0,0,.15);
+  --lg-solid:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.28),inset 1px 0 0 rgba(255,255,255,.14),inset -1px 0 0 rgba(255,255,255,.14),0 8px 18px -8px rgba(8,24,15,.55);
+  --lg-light:inset 0 0 0 1px rgba(28,49,34,.17),inset 0 1px 0 #fff,0 1px 2px rgba(20,42,27,.08),0 6px 14px -8px rgba(20,42,27,.22);
+
+  /* Variables que las hojas leían sin que nadie las definiera: el navegador las resolvía a estos valores. */
+  --liquid-surface:transparent;--liquid-fill:transparent;--liquid-filter:none;
+  --liquid-hover-shadow:none;--liquid-hover-edge:currentcolor;
+  --header-surface:transparent;--header-fill:transparent;
+
+  /* Valores que se repetían sueltos en las reglas. */
+  --radio-boton:9999px;--radio-tarjeta:22px;--radio-campo:14px;--radio-menu:26px;--radio-aviso:20px;--radio-insignia:999px;
+  --desenfoque-encabezado:blur(20px) saturate(180%);--desenfoque-cookies:blur(22px) saturate(150%);--desenfoque-cookies-panel:blur(26px) saturate(150%);
+  --z-salto:100;--z-calendario:1200;--z-menu:9998;--z-encabezado:9999;--z-cookies:10000;
+  --duracion-corta:150ms;--duracion-boton:.22s;--curva-boton:cubic-bezier(.22,1,.36,1);
+
+  /* Cookies */
+  --cookies-solido:#142b24;--cookies-vidrio:rgba(16,36,29,.78);--cookies-vidrio-panel:rgba(16,36,29,.86);
+  --cookies-texto:#fff;--cookies-suave:rgba(255,255,255,.84);--cookies-linea:rgba(255,255,255,.16);
+  --cookies-activo:#d6e8a7;--cookies-error:#ffc4ba;
+  --cookies-filo:inset 0 1px 0 rgba(255,255,255,.34),inset 0 0 0 1px rgba(255,255,255,.14);
+
+  /* Aviso flotante */
+  --aviso-solido:#142b24;--aviso-vidrio:rgba(16,36,29,.82);--aviso-texto:#fff;--aviso-filo:var(--cookies-filo);
+  --aviso-exito:#d6e8a7;--aviso-error:#ffc4ba;
+
+  /* Estados del panel: cuatro tonos desaturados; siempre llevan texto. Contraste del texto ≥ 7:1 sobre la tarjeta. */
+  --insignia-verde-fondo:rgba(47,106,72,.14);--insignia-verde-texto:#1d4a31;--insignia-verde-borde:rgba(47,106,72,.26);
+  --insignia-ambar-fondo:rgba(184,116,30,.16);--insignia-ambar-texto:#5e4210;--insignia-ambar-borde:rgba(184,116,30,.32);
+  --insignia-rojo-fondo:rgba(163,50,31,.12);--insignia-rojo-texto:#7a2e20;--insignia-rojo-borde:rgba(163,50,31,.28);
+  --insignia-gris-fondo:rgba(70,40,31,.08);--insignia-gris-texto:#4b423a;--insignia-gris-borde:rgba(70,40,31,.16);
+
+  /* Vidrio en tres niveles. Base: listas y tablas largas, sin desenfoque. Tarjeta: piezas del contenido, también sin desenfoque. Flotante: diálogos, calendario, listas, avisos. */
+  --vidrio-base-fondo:rgba(255,250,244,.62);--vidrio-base-borde:rgba(255,255,255,.7);
+  --vidrio-base-sombra:inset 0 1px 0 rgba(255,255,255,.85),0 10px 26px -18px rgba(150,70,20,.3);
+  --vidrio-tarjeta-fondo:rgba(255,250,244,.72);--vidrio-tarjeta-borde:rgba(255,255,255,.75);
+  --vidrio-tarjeta-sombra:inset 0 1px 0 rgba(255,255,255,.85),0 14px 30px -22px rgba(150,70,20,.36),0 2px 6px -2px rgba(150,70,20,.08);
+  --vidrio-flotante-fondo:rgba(255,250,244,.9);--vidrio-flotante-borde:rgba(255,255,255,.85);
+  --vidrio-flotante-sombra:inset 0 1px 0 rgba(255,255,255,.9),0 18px 44px -18px rgba(60,45,25,.4),0 0 0 1px rgba(47,106,72,.1);
+  --vidrio-flotante-desenfoque:blur(22px) saturate(140%);
+  --vidrio-opaco:#fffaf4;
+
+  /* Escala única de espacios y de radios del panel. */
+  --esp-1:4px;--esp-2:8px;--esp-3:12px;--esp-4:16px;--esp-5:24px;--esp-6:32px;
+  --radio-sm:10px;
+
+  /* Medidas de componentes del panel */
+  --kpi-alto:96px;--fila-alto:48px;--campo-alto:46px;--filtro-ancho-min:160px;
+  --barra-alto:64px;--contenido-max:1280px;--menu-ancho:268px;--menu-ancho-total:300px;
+
+  /* Textos legales: la página pública y la vista previa del editor usan la misma tipografía de lectura. */
+  --legal-tinta:#26231f;--legal-titulo:#13261b;--legal-enlace:#2f6a48;--legal-linea:rgba(70,40,20,.16);
+  --legal-cita:rgba(47,106,72,.45);--legal-cabecera:rgba(47,106,72,.08);
+  --legal-h2:clamp(21px,1.8vw,24px);--legal-h3:19px;--legal-h4:17px;--legal-tabla:.94em;
+  --legal-parrafo:18px;--legal-h2-arriba:44px;--legal-h3-arriba:32px;--legal-sangria:1.4em;
+}
+
+.hero,.auth-visual,.functions-section {
+  --bg:#172218;--surface:#223123;--text:#f2efe9;--muted:#d1d4c5;--sage:#d1dcc0;--line:#6b765d;--focus:#fffdf6;
+}
+.auth-brand,body:is([data-screen=terminos],[data-screen=privacidad],[data-screen=cookies]) .site-footer { --focus:#fffdf6; }
+.privacy-flow,body:is([data-screen=terminos],[data-screen=privacidad],[data-screen=cookies]) { --text:#142419;--muted:#4a5d4e;--focus:#264d32; }
+
+/* ── Zona acceso ─────────────────────────────────────────────────────────────────────────────── */
+.auth-flow {
+  --text:#142419;--muted:#4a5d4e;--sage:#264d32;--focus:#264d32;
+  /* Aceptar textos nuevos: tarjetas de vidrio sobre el vidrio oscuro del acceso. */
+  --acepta-fondo:rgba(255,255,255,.07);--acepta-borde:rgba(255,255,255,.16);--acepta-filo:inset 0 1px 0 rgba(255,255,255,.12);
+  --acepta-fila:rgba(0,0,0,.16);--acepta-fila-borde:rgba(255,255,255,.12);
+  --acepta-enlace:rgba(255,255,255,.1);--acepta-enlace-hover:rgba(255,255,255,.18);--acepta-enlace-borde:rgba(255,255,255,.24);
+  --acepta-marcado:rgba(214,232,167,.12);--acepta-marcado-borde:rgba(214,232,167,.6);--acepta-suave:rgba(255,255,255,.84);
+}
+.auth-flow .btn-liquid-light { --liquid-fill:#f6f9f6; }
+.auth-layout.auth-flow { --focus:#fff; }
+.auth-layout .auth-bento { --text:#fff;--muted:rgba(255,255,255,.84);--sage:#fff;--focus:#fff; }
+
+/* ── Zona panel (usuario y administración) ──────────────────────────────────────────────────── */
+body[data-private=true] {
+  --text:#142419;--muted:#4a5d4e;--focus:#264d32;
+  --garden-ink:#142419;--garden-muted:#4a5d4e;--garden-line:#d4dfd6;
+  --garden-green:#355a44;--garden-tint:#edf3ee;
+  --dashboard-forest:#173c2f;
+}
+body[data-private=true] .btn-liquid-light { --liquid-fill:#f6f9f6; }
+html:has(body[data-private=true]:is([data-role=admin],[data-role=user])) { --claro-fondo:#fdf3e8; }
+body[data-private=true]:is([data-role=admin],[data-role=user]) {
+  --claro-tinta:#1b231d;--claro-titulo:#13261b;--claro-suave:#4b423a;--claro-linea:rgba(70,40,20,.12);
+  --claro-verde:#2f6a48;--claro-peligro:#a3321f;
+        --text:var(--claro-tinta);--muted:var(--claro-suave);--focus:var(--claro-verde);--sage:var(--claro-verde);
+  --garden-ink:var(--claro-tinta);--garden-muted:var(--claro-suave);--garden-line:var(--claro-linea);
+  --garden-green:var(--claro-verde);--garden-tint:rgba(255,255,255,.1);
+
+  /* Botones de vidrio del panel */
+  --boton-alto:44px;--boton-alto-compacto:38px;
+  --boton-primaria:linear-gradient(180deg,rgba(63,122,85,.92) 0%,rgba(40,90,60,.92) 100%);
+  --boton-primaria-hover:linear-gradient(180deg,rgba(71,136,96,.94) 0%,rgba(45,100,68,.94) 100%);
+  --boton-secundaria:rgba(255,252,247,.72);--boton-secundaria-hover:rgba(255,255,255,.95);--boton-secundaria-borde:rgba(255,255,255,.85);
+  --boton-secundaria-filo:inset 0 1px 0 #fff,0 6px 16px -10px rgba(150,70,20,.4),0 0 0 1px rgba(70,40,20,.06);
+  --boton-peligro:linear-gradient(180deg,rgba(196,85,58,.92) 0%,rgba(156,50,32,.92) 100%);
+  --boton-peligro-hover:linear-gradient(180deg,rgba(207,97,70,.94) 0%,rgba(168,56,38,.94) 100%);
+  /* Acento: coral con texto oscuro (5,8:1); el blanco sobre coral no llega a AA. */
+  --boton-acento:var(--coral);--boton-acento-hover:#fb8670;--boton-acento-texto:var(--claro-titulo);
+  --boton-acento-filo:inset 0 1px 0 rgba(255,255,255,.35),0 8px 20px -10px rgba(250,114,90,.75);
+
+  /* Series de las gráficas con varias líneas (se distinguen también por el trazo) */
+  --serie-1:#2f6a48;--serie-2:#b8741e;--serie-3:#3f6f9a;
+
+  /* Campos del panel: vidrio claro */
+  --campo-fondo:rgba(255,250,244,.72);--campo-borde:rgba(70,40,20,.18);--campo-filo:inset 0 1px 0 rgba(255,255,255,.7);
+  --campo-placeholder:rgba(75,66,58,.62);--campo-lista:rgba(255,250,244,.9);
+}
+/* Menú lateral (administración y usuario): filas sin cápsula; solo el apartado activo lleva el vidrio de los botones de la portada. */
+body[data-private=true]:is([data-role=admin],[data-role=user]) {
+  --menu-fila-alto:38px;--menu-fuente:13.5px;--menu-pad-x:12px;--menu-gap-icono:10px;--menu-gap:2px;--menu-gap-grupo:20px;
+  --menu-fondo:radial-gradient(90% 40% at 0% 0%,rgba(255,255,255,.1),transparent 70%),linear-gradient(170deg,rgba(38,94,60,.92) 0%,rgba(22,62,42,.95) 100%);
+  --menu-borde:rgba(255,255,255,.18);
+  --menu-filo:inset 0 1px 0 rgba(255,255,255,.24);--menu-sombra:0 24px 50px -24px rgba(20,50,30,.55);--menu-desenfoque:blur(18px) saturate(140%);
+  --menu-texto:rgba(255,255,255,.86);--menu-texto-suave:rgba(255,255,255,.72);--menu-icono-reposo:.75;
+  --menu-fila-hover:rgba(255,255,255,.08);--menu-fila-pulsada:rgba(0,0,0,.14);
+  --menu-activo-fondo:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(15,28,19,.32) 100%);
+  --menu-activo-borde:rgba(255,255,255,.26);
+  --menu-activo-filo:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(255,255,255,.08),0 8px 18px -8px rgba(0,0,0,.4);
+  --menu-acento:var(--coral);
+}
+@media (max-width:1024px) {
+  body[data-private=true]:is([data-role=admin],[data-role=user]) {
+    --menu-fila-alto:44px;--menu-fuente:15px;--menu-gap-icono:12px;
+    --menu-fondo:linear-gradient(170deg,rgba(38,94,60,.97) 0%,rgba(22,62,42,.98) 100%);
+    --menu-pie-sombra:radial-gradient(farthest-side at 50% 100%,rgba(0,0,0,.42),transparent);
+    --menu-pie-tapa:linear-gradient(rgba(22,62,42,0),rgb(22,62,42) 55%);
+  }
+}
+/* Barra superior de ambos paneles: sin franja; las acciones flotan en una cápsula de vidrio claro. */
+body[data-private=true]:is([data-role=admin],[data-role=user]) {
+  --capsula-fondo:rgba(255,250,244,.74);--capsula-borde:rgba(255,255,255,.85);
+  --capsula-sombra:inset 0 1px 0 #fff,0 10px 26px -14px rgba(60,45,25,.42),0 0 0 1px rgba(70,40,20,.06);
+  --capsula-boton-hover:rgba(47,106,72,.1);
+}
+/* Piezas, foco, tipografía y componentes de ambos paneles; la foto del habanero solo la usan las plantas del usuario. */
+body[data-private=true]:is([data-role=admin],[data-role=user]) {
+  --pieza-verde:radial-gradient(80% 60% at 0% 0%,rgba(255,255,255,.12),transparent 70%),linear-gradient(165deg,rgba(40,98,62,.95) 0%,rgba(22,62,42,.97) 100%);
+  --pieza-verde-borde:rgba(255,255,255,.2);
+  --pieza-verde-filo:inset 0 1px 0 rgba(255,255,255,.26),0 18px 38px -20px rgba(20,50,30,.6);
+  --pieza-verde-suave:rgba(255,255,255,.78);
+  --vidrio-sobre-verde:rgba(255,255,255,.14);--vidrio-sobre-verde-hover:rgba(255,255,255,.22);--vidrio-sobre-verde-borde:rgba(255,255,255,.26);
+  --foto-habanero:url('../imagenes/habanero-fondo.webp');
+  --foto-velo:linear-gradient(180deg,rgba(12,34,21,.82) 0%,rgba(12,34,21,.5) 46%,rgba(12,34,21,.86) 100%);
+  --foto-velo-banda:linear-gradient(90deg,rgba(12,34,21,.9) 0%,rgba(12,34,21,.7) 50%,rgba(12,34,21,.35) 100%);
+  --lectura-fondo:rgba(255,250,244,.92);--lectura-borde:rgba(255,255,255,.9);
+  --medidor-fondo:rgba(70,40,20,.1);--medidor-verde:#2f6a48;--medidor-ambar:#b8741e;
+  --ia-luz:radial-gradient(70% 90% at 100% 0%,rgba(255,138,66,.18),transparent 70%),radial-gradient(60% 80% at 0% 100%,rgba(47,106,72,.12),transparent 70%);
+  --foco-borde:rgba(47,106,72,.6);--foco-halo:0 0 0 3px rgba(47,106,72,.18);--foco-anillo:rgba(47,106,72,.7);
+  --segmento-fondo:rgba(70,40,20,.07);--segmento-activo:#fffdf9;
+  --segmento-sombra:0 1px 2px rgba(60,45,25,.14),0 4px 10px -4px rgba(60,45,25,.22);
+  --linea-tiempo:rgba(47,106,72,.24);--nodo-tiempo:#2f6a48;--nodo-tiempo-ultimo:var(--coral);
+  --serie-relleno:.16;
+  --saludo-tam:clamp(34px,3.6vw,46px);--saludo-huerto-tam:clamp(18px,1.6vw,21px);
+  --cifra-tam:28px;--etiqueta-tam:14px;--radio-ficha:20px;--radio-dialogo:26px;
+  --dialogo-sombra:0 0 0 1px rgba(31,25,21,.06),0 32px 72px -24px rgba(60,30,10,.5);
+  --dialogo-velo:rgba(24,30,22,.32);
+
+  /* El café de --claro-suave se ensuciaba sobre la crema con brillo naranja; aquí la tinta secundaria es verde grisácea (≈ 7.8:1). */
+  --claro-suave:#3f4f45;
+  /* Escala de texto: nada por debajo de --texto-meta en el panel del usuario. */
+  --texto-meta:14px;--texto-etiqueta:15px;--texto-cuerpo:16px;--texto-titulo-tarjeta:20px;
+  --insignia-alto:30px;--insignia-punto:8px;
+  --medallon:40px;--separacion-etiqueta:6px;--aviso-insignia-ancho:124px;
+  --tarjeta-centrada:760px;--boton-ancho-min:220px;--marca-paso:34px;--marca-progreso:26px;--medallon-grande:56px;
+  --dialogo-ancho:640px;--dato-ancho-min:220px;--kpi-cifra:32px;--accion-columna:96px;
+  --codigo-tam:clamp(26px,7vw,40px);
+  --fila-hover:rgba(255,255,255,.55);--fila-no-leida:rgba(47,106,72,.07);--fila-no-leida-hover:rgba(47,106,72,.11);--fila-anulada:rgba(255,250,244,.4);
+}
+html body[data-private=true]:is([data-role=admin],[data-role=user]) .auth-flow { --text:var(--claro-tinta);--muted:var(--claro-suave);--sage:var(--claro-verde); }
+body[data-private=true] .brand { --focus:#264d32; }

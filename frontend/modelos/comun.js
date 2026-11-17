@@ -1,0 +1,189 @@
+// MODELO · Común: documentos legales y estadísticas de privacidad, y datos del panel (destinos, saludo, huerto).
+// Define: PrivacyModel, PrivacyData, AppModel, AppService.
+
+// ── Privacidad ──
+// Documentos legales y secciones que cuentan las estadísticas. La autoridad es del servidor.
+const PrivacyModel = (() => {
+  const documents = Object.freeze({
+    terminos: Object.freeze({title:'Términos y condiciones', state:'pending', version:null}),
+    privacidad: Object.freeze({title:'Aviso de privacidad', state:'pending', version:null}),
+    cookies: Object.freeze({title:'Política de cookies', state:'pending', version:null})
+  });
+  // Pantallas a las que «Volver» no debe llevar: otro documento o un paso de acceso a medias.
+  // Lista cerrada: cualquier otra pantalla, incluida la administración, no se cuenta.
+  function sectionOf(route) {
+    if(route.screen === 'cuenta') return route.detail === 'privacidad' ? 'privacidad' : route.detail ? null : 'cuenta';
+    if(route.screen === 'inicio') return {'el-proyecto':'proyecto',prototipo:'prototipo','como-funciona':'funcionamiento'}[route.anchor] || 'inicio';
+    return {huerto:'huerto',telemetria:'panel_tecnico',mantenimiento:'mantenimiento',soporte:'soporte',avisos:'avisos'}[route.screen] || null;
+  }
+  return Object.freeze({sectionOf,documents});
+})();
+
+// Datos de privacidad reales. Lo automático se marca como sondeo: no alarga la sesión.
+const PrivacyData = (() => {
+  const background = {'X-Chilito-Sondeo':'1'};
+  async function send(path, options = {}) {
+    try {
+      const response = await ChilitoHTTP.request(path, options);
+      if(response.http === 401) return {status:'unauthenticated'};
+      if(response.http === 429) return {status:'limited'};
+      if(![200,201].includes(response.http)) return {status:'unavailable'};
+      return response.body;
+    } catch { return {status:'unavailable'}; }
+  }
+  const post = (path, body, headers = {}) => send(path, {method:'POST', body, headers});
+  return Object.freeze({
+    cookies: () => send('/api/privacidad/cookies', {headers:background}),
+    decide: statistics => post('/api/privacidad/cookies', {statistics}, background),
+    section: section => post('/api/estadisticas/seccion', {section}, background),
+    document: kind => send('/api/privacidad/documentos/'+encodeURIComponent(kind), {headers:background}),
+    myData: () => post('/api/privacidad/mis-datos', {}),
+    saveProfile: values => post('/api/cuenta/perfil', values),
+    welcome: values => post('/api/cuenta/bienvenida', values),
+    acceptLegal: documents => post('/api/legales/aceptar', {documents}),
+    acceptances: () => send('/api/cuenta/aceptaciones'),
+    cancelDeletion: () => post('/api/cuenta/eliminar/cancelar', {}),
+    // Pide borrar la cuenta con la contraseña: una contraseña incorrecta es 400 y se distingue de un fallo del servicio.
+    async requestDeletion(password) {
+      try {
+        const response = await ChilitoHTTP.request('/api/cuenta/eliminar', {method:'POST', body:{password}});
+        if(response.http === 200) return response.body;
+        return {status:{400:'wrong-password', 401:'unauthenticated', 429:'limited'}[response.http] || 'unavailable'};
+      } catch { return {status:'unavailable'}; }
+    }
+  });
+})();
+
+// ── Panel ──
+// Solo contratos de presentación; la autorización y el estado guardado son de Django.
+const AppModel = (() => {
+  const destinations = [
+    {id:'huerto',label:'Mi huerto',icon:'leaf'},
+    {id:'telemetria',label:'Panel técnico',icon:'activity'},
+    {id:'mantenimiento',label:'Mantenimiento',icon:'tool'},
+    {id:'soporte',label:'Soporte técnico',icon:'support'},
+    {id:'avisos',label:'Avisos',icon:'bell'},
+    {id:'cuenta',label:'Mi cuenta',icon:'user'}
+  ];
+  // Destinos de administración por grupo. Cada uno se ve solo con su capacidad; el servidor la vuelve a exigir en cada endpoint.
+  const adminGroups = [
+    {label:'Operación', items:[
+      {id:'admin/flota',label:'Telemetría de flota',icon:'activity',capability:'ver_flota'},
+      {id:'admin/soporte',label:'Consola remota',icon:'terminal',capability:'atender_soporte'},
+      {id:'admin/mantenimientos',label:'Mantenimientos',icon:'tool',capability:'gestionar_mantenimientos'}]},
+    {label:'Gestión', items:[
+      {id:'admin/solicitudes',label:'Solicitudes del producto',icon:'inbox',capability:'atender_consultas'},
+      {id:'admin/equipos',label:'Inventario de equipos',icon:'chip',capability:'gestionar_dispositivos'},
+      {id:'admin/ventas',label:'Ventas',icon:'tag',capability:'gestionar_ventas'},
+      {id:'admin/guias',label:'Guías de cuidado',icon:'book',capability:'gestionar_guias'}]},
+    {label:'Legal', items:[
+      {id:'admin/legales',label:'Textos legales',icon:'document',capability:'gestionar_legales'},
+      {id:'admin/consentimientos',label:'Bitácora de consentimientos',icon:'clipboard',capability:'ver_consentimientos'}]},
+    {label:'Super admin', items:[
+      {id:'admin/administradores',label:'Administradores',icon:'users',capability:'gestionar_administradores'}]}
+  ];
+  const adminDestinations = adminGroups.flatMap(group=>group.items);
+  const adminCapabilities = Object.fromEntries(adminDestinations.map(item=>[item.id,item.capability]));
+  const allowedAdmin=(session=AuthService.session)=>adminDestinations.filter(item=>(session.capabilities||[]).includes(item.capability));
+  const adminMenu=session=>adminGroups.map(group=>({label:group.label,items:group.items.filter(item=>(session?.capabilities||[]).includes(item.capability))})).filter(group=>group.items.length);
+  // Los avisos de caso nuevo que guarda la base apuntan a «consola».
+  const adminRedirects = {consola:'soporte'};
+  // Gmail en otra pestaña con la cuenta de soporte seleccionada. Sin API ni credenciales: Gmail autentica por su cuenta.
+  const supportMailUrl=()=>{const contact=ChilitoHTTP.configuration?.supportContact;
+    return typeof contact==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)?'https://mail.google.com/mail/?authuser='+encodeURIComponent(contact):null;};
+  const adminHome=session=>allowedAdmin(session)[0]?.id||'huerto';
+  // Panel de cada sesión completa. El servidor sigue decidiendo qué puede abrirse.
+  const panelHome=session=>session?.role==='admin'?(session.profile?.mfaRequired?'#cuenta/seguridad':'#'+adminHome(session)):'#huerto';
+  const alias=session=>{const value=session?.profile?.profile?.alias;return typeof value==='string'?value.trim():'';};
+  const addressed=(name,text)=>name?`${name}, ${text[0].toLowerCase()}${text.slice(1)}`:text;
+  // Sin afirmaciones sobre las plantas: no dependen de lecturas. Una por visita.
+  const gardenPhrases=['Cada pequeño cuidado cuenta.','Cultivar es aprender un poco cada día.','Lo bueno de un huerto es que se cuida poco a poco.','Aquí tienes lo de tu huerto en un mismo lugar.','Un rato con tus plantas también es tiempo bien empleado.'];
+  const gardenPhrase=gardenPhrases[Math.floor(Math.random()*gardenPhrases.length)];
+  const gardenGreeting=name=>({title:name?`Hola, ${name}`:'Te damos la bienvenida a tu huerto',lead:name?'Te damos la bienvenida a tu huerto.':'',phrase:gardenPhrase});
+  const text = value => typeof value === 'string' && value.trim().length > 0;
+  const dateValid = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));
+  const idValid = value => typeof value === 'string' && /^[1-9][0-9]{0,18}$/.test(value);
+  const NOTICE_ORIGINS = ['dispositivo', 'ia', 'legal', 'soporte', 'vinculacion', 'sistema'];
+  const NOTICE_SEVERITIES = ['informacion', 'advertencia', 'critico'];
+  const NOTICE_FILTERS = ['todos', 'no_leidos', 'equipo', 'ia', 'soporte', 'legales'];
+  const linkValid = value => value === null || typeof value === 'string' && /^#[A-Za-z0-9/_-]{1,119}$/.test(value);
+  function notice(raw) {
+    if(!raw || !idValid(raw.id) || !text(raw.title) || typeof raw.text !== 'string' || !NOTICE_ORIGINS.includes(raw.origin)
+      || !NOTICE_SEVERITIES.includes(raw.severity) || !dateValid(raw.createdAt) || typeof raw.read !== 'boolean' || typeof raw.resolvable !== 'boolean'
+      || !linkValid(raw.link) || raw.garden !== null && typeof raw.garden !== 'string' || raw.resolvedAt !== null && !dateValid(raw.resolvedAt)) return null;
+    return {id:raw.id, origin:raw.origin, severity:raw.severity, title:raw.title, text:raw.text, garden:raw.garden, link:raw.link,
+      createdAt:raw.createdAt, read:raw.read, resolvedAt:raw.resolvedAt, resolvable:raw.resolvable};
+  }
+  function notices(data = {}) {
+    if(['loading', 'error', 'not-found'].includes(data.status)) return {status:data.status, items:[], page:1, total:0};
+    if(data.status !== 'ready' || !Array.isArray(data.items)) return {status:'error', items:[], page:1, total:0};
+    const items = data.items.map(notice);
+    if(items.some(item => !item) || new Set(items.map(item => item.id)).size !== items.length) return {status:'error', items:[], page:1, total:0};
+    return {status:items.length ? 'ready' : 'empty', items, page:Number.isInteger(data.page) ? data.page : 1, total:Number.isInteger(data.total) ? data.total : items.length};
+  }
+  // Fecha en que se borrará la cuenta, si la persona la pidió (la fija el servidor).
+  const deletionDate = session => dateValid(session?.profile?.deletionDate) ? session.profile.deletionDate : null;
+  return {
+    destinations,supportMailUrl,adminDestinations,adminCapabilities,allowedAdmin,adminMenu,adminRedirects,adminHome,panelHome,alias,addressed,gardenGreeting,notices,notice,idValid,deletionDate,NOTICE_FILTERS,
+    isPrivate(screen) { return screen === 'admin' || destinations.some(item=>item.id===screen); },
+    profile(data={}) { return data.status==='ready' && text(data.email) && data.verified===true
+      ? {email:data.email,verified:true,status:'ready',firstName:(data.profile||data).firstName||'',lastName:(data.profile||data).lastName||'',alias:(data.profile||data).alias||'',greeting:(data.profile||data).greeting||''} : {email:null,verified:null,status:'error'}; },
+    date(value) { const d = new Date(value); return value && Number.isFinite(d.getTime()) ? d.toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : 'Sin registro'; },
+    number(value) { return new Intl.NumberFormat('es-MX',{maximumFractionDigits:1}).format(value); }
+  };
+})();
+
+// Datos guardados de cuenta, huerto y avisos, pedidos al mismo origen. Sin colecciones de respaldo.
+const AppService = (() => {
+  const background = {'X-Chilito-Sondeo':'1'};
+  const query = values => { const params = new URLSearchParams(Object.entries(values).filter(([, value]) => value)); return params.size ? `?${params}` : ''; };
+  // Cada acción: ruta, método y qué acepta como respuesta. El contador va como sondeo: no alarga la sesión.
+  const actions = {
+    profile:() => ({path:'/api/cuenta'}),
+    notices:p => ({path:`/api/avisos${query({filtro:AppModel.NOTICE_FILTERS.includes(p.filter) ? p.filter : 'todos', page:p.page > 1 ? p.page : ''})}`}),
+    notice:p => ({path:`/api/avisos/${p.id}`, needsId:true}),
+    'mark-read':p => ({path:`/api/avisos/${p.id}/leido`, method:'POST', needsId:true}),
+    'mark-resolved':p => ({path:`/api/avisos/${p.id}/resuelto`, method:'POST', needsId:true}),
+    'mark-all-read':() => ({path:'/api/avisos/leer-todos', method:'POST'}),
+    counter:() => ({path:'/api/avisos/contador', headers:background}),
+    'cancel-deletion':() => ({path:'/api/cuenta/eliminar/cancelar', method:'POST'})
+  };
+  function adapt(action, body) {
+    if(action === 'profile') return AppModel.profile(body);
+    if(action === 'notices') return AppModel.notices(body);
+    if(['notice', 'mark-read', 'mark-resolved'].includes(action)) {
+      const item = AppModel.notice(body.notice);
+      return item ? {status:action === 'notice' ? 'ready' : 'accepted', item} : {status:'error'};
+    }
+    if(action === 'counter') return Number.isInteger(body.unread) && body.unread >= 0 ? {status:'ready', unread:body.unread} : {status:'error'};
+    return body.status === 'accepted' ? {status:'accepted', updated:body.updated ?? 0} : {status:'error'};
+  }
+  return Object.freeze({
+    async request(action, payload = {}, {signal} = {}) {
+      if (signal?.aborted) throw new DOMException('Cancelled','AbortError');
+      if (action === 'logout') return AuthService.logout({signal});
+      const plan = actions[action]?.(payload);
+      if(!plan) return {status:'unavailable'};
+      if(plan.needsId && !AppModel.idValid(payload.id)) return {status:'not-found'};
+      const response = await ChilitoHTTP.request(plan.path, {signal, method:plan.method, body:plan.method === 'POST' ? {} : undefined, headers:plan.headers});
+      if(response.http === 401 || response.body?.code === 'verification-required') {
+        AuthService.forgetSession();
+        ChilitoHTTP.sessionExpired();
+        return {status:'unauthenticated'};
+      }
+      if(response.http === 404) return {status:'not-found'};
+      if(response.http === 429) return {status:'limited'};
+      return response.http === 200 ? adapt(action, response.body) : {status:'error'};
+    }
+  });
+})();
+
+// ── Avisos ──
+// Reglas del aviso flotante (3.5): tipos permitidos, ícono y permanencia. El error no se oculta solo (ms: 0).
+const AvisoModel = Object.freeze({
+  tipos:Object.freeze({
+    exito:Object.freeze({icono:'check',rol:'status',ms:5000}),
+    info:Object.freeze({icono:'info',rol:'status',ms:5000}),
+    error:Object.freeze({icono:'alert',rol:'alert',ms:0})
+  })
+});
